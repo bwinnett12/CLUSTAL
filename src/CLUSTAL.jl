@@ -1,14 +1,22 @@
 #=
 Base:
 - Julia version: 1.4.2
-- Author: bill
+- Author: Bill Winnett
+- Author email: bwinnett12@gmail.com
 - Date: 2020-07-31
 =#
 
+#=
+This algorithm is designed to pull out the names and sequences from Clustal files (.aln)
+The good thing about these files is that they are already aligned but follows a different scheme
 
-# Sets up a 1D array to pick up the sequence names. Next dimension is sequences themselves
-# This algorithm is specialized for the scheme of Clustal (.aln) files
-# Scheme: {noise} -> Sequences [1 to n] -> line for match signature -> blank line -> repeat
+Scheme of .aln (Repeats until end of sequences):
+Aligned Sequences   [1 -> n] - Line for match/mismatch identification - blank line
+=#
+
+
+# Parses the file for the name of each sequence
+# Scheme runs several times but picks up scheme after first iteration
 function parseSequenceNames(raw::Array)
     # Sets up an array to add names to
     SeqNameArr = String[]
@@ -59,51 +67,60 @@ function parseSequenceNames(raw::Array)
 end
 
 
+# Parses the file for the sequences and puts them into an array
 function parseSequences(raw::Array, names::Array)
-#     SequenceArray = fill("", length(names))
-#     println(typeof(SequenceArray))
 
 SequencesArray = []
     # Iterates through each name
     for id in names
-        SequenceById = ""
+        SequenceById::String = ""
 
-        # Runs loop through line of the clustal file once
+        # Runs loop through line of the clustal file once per name
         for i in eachindex(raw)
+
+            # Appends each bit of the sequence to SequenceById
             if occursin(id, raw[i])
-                splitraw = split(raw[i], " ")
                 SequenceById = string(SequenceById, split(raw[i], " ")[2])
 
             end
         end
+        # Adds the sequence to an array. The index will be shared with the name
         push!(SequencesArray, SequenceById)
     end
 
-    println(" ")
     return SequencesArray
 end
 
 
-function interweave(a::Array, b::Array)
-    weave = []
-    println(length(b))
-    for f in [1, minimum(length(a), length(b))]
-        println("ran once")
-        push!(weave, (a[f], b[f]))
-        println(a[f])
-        println(b[f])
-    end
-    print(weave)
-    return weave
-end
+"""
+    parseClustal(file_location)
 
-function parseClustal(file_location)
-    file = open(file_location)
-    file_read = readlines(file)
+
+- Call this function to convert the .aln or Clustal format to a tuple of (SeqID, Sequence)
+- Julia version: 1.4.2
+
+# Arguments
+
+- `file_location::String`:
+
+# Returns
+- `Tuple(SequenceID, Sequence)`:
+# Examples
+
+```jldoctest
+julia> parseClustal("aligned_ATP6.aln")
+("staratp6.1", "--atatgaggaacttgga...")
+("staratp6.2", "--atatgaggatctt_ga...")
+("staratp6.3", "--atatgagcatcttgga...")
+```
+"""
+function parseClustal(file_location::String)
+    file_read = readlines(open(file_location))
 
     ArrayNames = parseSequenceNames(file_read)
     ArraySequences = parseSequences(file_read, ArrayNames)
 
+    # Interweaves the name and sequence into a tuple
     interweavedArray = []
     for loc in eachindex(ArraySequences)
         push!(interweavedArray, (ArrayNames[loc], ArraySequences[loc]))
@@ -111,5 +128,4 @@ function parseClustal(file_location)
 
     return interweavedArray
 end
-
 
