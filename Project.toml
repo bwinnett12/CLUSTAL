@@ -1,0 +1,4 @@
+name = "Clustal"
+uuid = "7a922ad4-8176-4b1a-9115-bd743859124b"
+authors = ["Bill Winnett <bwinnett12@gmail.com>"]
+version = "0.1.0"
